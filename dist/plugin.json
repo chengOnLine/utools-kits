@@ -1,0 +1,32 @@
+{
+	"name": "cheng",
+	"pluginName": "utools-kits",
+	"description": "实用工具包，提高工作效率",
+	"author": "https://github.com/chengOnLine",
+	"homepage": "",
+	"version": "1.0.0",
+	"logo": "logo.png",
+	"main": "index.html",
+	"preload": "preload.js",
+	"development": {
+	  "main": "http://127.0.0.1:3000",
+	  "preload": "preload.js"
+	},
+	"features": [
+	  {
+		"code": "kits",
+		"explain": "实用工具包",
+		"cmds": [
+		  "kits",
+		  "实用工具包",
+		  {
+			"type": "files",
+			"fileType": "file",
+			"match": "/\\.(png|jpeg|jpg|webp)$/i",
+			"label": "压缩图片"
+		  }
+		]
+	  }
+	]
+  }
+  
