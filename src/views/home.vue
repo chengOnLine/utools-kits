@@ -54,12 +54,36 @@ const regexExp = computed(() => {
 const matchTextList = computed(() => {
   let regex = new RegExp(regexState.regex , regexState.matchPattern?.join(''));
   let result = regexState.text?.match(regex)
+  if( regexState.matchPattern?.indexOf('g') == -1 && result?.length > 0 ){
+    result = [result[0]] 
+  }
+  console.log('result' ,result)
   return result;
 })
 
 const regexState = reactive({
-  regex: '\\d+',
-  text: '0\\n1\\n2',
+  regex: '\\w[-\\w.+]*@([A-Za-z0-9][-A-Za-z0-9]+\\.)+[A-Za-z]{2,14}',
+  text: `下面是一些测试实例:
+history: v1.0 正则表达式测试工具上线
+         v1.1 2012-03-25 修复高亮偏移错位的问题
+         v1.2 2014-06-15 增加生成程序代码的功能
+         v1.3 2014-09-04 增加java代码的生成，修正邮箱的匹配
+             1. 截至目前为止，最长域名后缀 .cancerresearch
+         v1.4 2016-03-12 重写代码生成引擎，解决生成的bug
+         v1.5 2017-10-29 彻底重写测试功能解决文本过长时产生的高亮bug
+         v1.6 2020-07-12 增加dart语言的正则生成
+notice: 由于我们使用的是js的正则引擎，所以暂时还不能支持逆序环视
+demo@qq.com
+tool-lu@vip.qq.com
+tool+lu@gmail.com
+demo@live.com
+1019034271@qq.com
+127.0.0.1
+http://tool.lu/
+https://tool.lu/
+123456789012345
+16:09:22`,
+  nodeList: [],
   matchPattern: ['g'],
   matchPatternList: [
     {
@@ -86,12 +110,10 @@ const regexState = reactive({
   hightlightTypeList: ['type-a' , 'type-b'],
   hightlightTypeIndex: 0,
   handleTextInput:(e) => {
-    console.log('innder' , e.target.innerText )
+    console.log('innder' , e )
     // regexState.text = e.target.innerText?.replaceAll('\n' , '<br/>');
     regexState.text = e.target.innerText;
-    console.log("regexState.text" , regexState.text)
-
-
+    regexState.nodeList = [...e.target.childNodes];
     // console.log("regexState.text" , regexState.text)
     // nextTick(() => {
     //   if( hlTextRef.value ){
@@ -107,17 +129,19 @@ const regexState = reactive({
 })
 
 watchEffect( () => {
+  console.log("watchEffect")
   let regex = new RegExp(regexState.regex , regexState.matchPattern?.join(''));
-  let text = regexState.text;
+  // let text = regexState.text;
   function match(){
     console.log("arguments" , arguments)
     flag = true;
     let mText = arguments[0];
-    let offset = arguments[1];
-    let oText = arguments[2];
-    let nodeOffset = arguments[3];
+    let offset = arguments[arguments.length-3];
+    let oText = arguments[arguments.length-2];
+    let nodeOffset = arguments[arguments.length-1];
     if( hlTextRef.value?.childNodes?.length > 0 ){
       let index = regexState.hightlightTypeIndex || 0;
+      regexState.hightlightTypeIndex += 1;
       const range = new Range();
       let node = hlTextRef.value.childNodes[nodeOffset];
       if( node?.nodeType != 3 && node?.nodeType != 1 ){
@@ -135,8 +159,7 @@ watchEffect( () => {
   }
 
   console.log("<------------------------------------start------------------------------------------>")
-  console.log("text" , text);
-  console.log("hlTextRef.innerHTML" , hlTextRef.value?.innerText)
+  // console.log("text" , text);
   let flag = false;
   let typeList = regexState.hightlightTypeList || [];
   regexState.hightlightTypeIndex = 0;
@@ -145,17 +168,31 @@ watchEffect( () => {
     CSS.highlights.set(type, highlight);
     return highlight;
   })
-  console.log("text" , text)
-  let temp = text.replaceAll('\n\n' , '\n');
-  console.log("temp" , temp)
-  let lines = text?.replaceAll('\n\n', '\n')?.split(/\n/) || [];
-  console.log("lines" , lines.length , lines );
-  lines?.forEach( (line,idx) => {
-    console.log("line" , line)
-    if( line && ( regexState.matchPattern?.indexOf('g') != -1 || !flag ) ){
-      line?.replace(regex , (...args) => { match(...args , idx ) } );
-    }
-  })
+  // let temp = text.replaceAll('\n\n' , '#');
+
+  // let lines = text?.replaceAll('\n\n', '\n')?.split(/\n/) || [];
+  if( hlTextRef.value ){
+    // let childNodes = hlTextRef.value.childNodes;
+    let childNodes = regexState.nodeList || [];
+    console.log("childnOde" , childNodes.length)
+    let lines = [];
+    Array.from(childNodes)?.map( node => {
+      console.log( 'node' ,node , node.nodeType , node.nodeValue)
+      const { nodeType } = node;
+      if( nodeType === 1 && node.childNodes?.length > 0 ){
+        lines.push(node.childNodes[0]?.nodeValue);
+      }else{
+        lines.push(node?.nodeValue)
+      }
+    })
+    console.log("lines" , lines.length , lines );
+    lines?.forEach( (line,idx) => {
+      console.log("line" , line)
+      if( line && ( regexState.matchPattern?.indexOf('g') != -1 || !flag ) ){
+        line?.replace(regex , (...args) => { match(...args , idx ) } );
+      }
+    })
+  }
   console.log("<------------------------------------end------------------------------------------>")
 })
 
@@ -163,6 +200,7 @@ onMounted(() => {
   if(hlTextRef.value){
     var textNode = document.createTextNode(regexState.text);
     hlTextRef.value?.appendChild(textNode);
+    regexState.nodeList = hlTextRef.value?.childNodes || [];
   }
 })  
 </script>
@@ -213,9 +251,10 @@ onMounted(() => {
     color: white;
   }
 
+  /* 描述每种高亮方式的CSS特性 */
   ::highlight(type-b) {
-    background-color: #ED9F1F;
-    color: white;
+    background-color: #9EEFFF;
+    color: black;
   }
 }
 </style>
