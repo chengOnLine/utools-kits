@@ -23,7 +23,17 @@
           </div>
 
           <!-- 文本输入框 -->
-          <div class="text-wrapper" :contenteditable="true" ref="hlTextRef" @input="regexState.handleTextInput">
+          <div 
+            class="text-wrapper" 
+            autocorrect="off"
+            autocapitalize="off"
+            spellcheck="false"
+            translate="no"
+            :aria-multiline="true"
+            :contenteditable="true" 
+            ref="hlTextRef" 
+            @input="regexState.handleTextInput"
+          >
           </div>
 
           <!-- <div v-html="matchText" ></div> -->
@@ -64,16 +74,18 @@ const matchTextList = computed(() => {
 const regexState = reactive({
   regex: '\\w[-\\w.+]*@([A-Za-z0-9][-A-Za-z0-9]+\\.)+[A-Za-z]{2,14}',
   text: `下面是一些测试实例:
-demo@qq.com
-tool-lu@vip.qq.com
-tool+lu@gmail.com
-demo@live.com
-1019034271@qq.com
-127.0.0.1
-http://tool.lu/
-https://tool.lu/
-123456789012345
-16:09:22`,
+          demo@qq.com
+          tool-lu@vip.qq.com
+          tool+lu@gmail.com
+          demo@live.com
+          1019034271@qq.com
+          127.0.0.1
+          http://tool.lu/
+          https://tool.lu/
+          123456789012345
+          16:09:22`,
+  placeholder: '请输入文本',
+  html: '',
   nodeList: [],
   matchPattern: ['g'],
   matchPatternList: [
@@ -104,7 +116,27 @@ https://tool.lu/
     console.log('innder' , e )
     // regexState.text = e.target.innerText?.replaceAll('\n' , '<br/>');
     regexState.text = e.target.innerText;
-    regexState.nodeList = [...e.target.childNodes];
+    let childNodes = hlTextRef.value.childNodes || [];
+    regexState.nodeList = [ ...childNodes ];
+    
+    var lineNodes = document.querySelectorAll('.text-line');
+    console.log('lineNodes' , lineNodes);
+
+    Array.from(lineNodes)?.forEach( (lineNode,idx) => {
+      if( idx !== lineNodes?.length -1 ){
+        var enterNode = lineNode.querySelector('.enter-symbol');
+        if( !enterNode ){
+          var spanNode = document.createElement('span');
+          spanNode.setAttribute("contenteditable" , "false");
+          spanNode.setAttribute("class" , "enter-symbol");
+          spanNode.style.color = 'rgba(0,0,0,.25)';
+          spanNode.style.pointerEvents = 'none';
+          var textNode = document.createTextNode('↵');
+          spanNode?.appendChild(textNode);
+          lineNode?.insertBefore(spanNode , lineNode.children[0]);
+        } 
+      }
+    })
     // console.log("regexState.text" , regexState.text)
     // nextTick(() => {
     //   if( hlTextRef.value ){
@@ -120,10 +152,10 @@ https://tool.lu/
 })
 
 watchEffect( () => {
-  console.log("watchEffect")
+  // console.log("watchEffect")
   let regex;
   function match(){
-    console.log("arguments" , arguments)
+    // console.log("arguments" , arguments)
     flag = true;
     let mText = arguments[0];
     let offset = arguments[arguments.length-3];
@@ -153,7 +185,7 @@ watchEffect( () => {
 
   }
 
-  console.log("<------------------------------------start------------------------------------------>")
+  // console.log("<------------------------------------start------------------------------------------>")
   let flag = false;
   let typeList = regexState.hightlightTypeList || [];
   regexState.hightlightTypeIndex = 0;
@@ -166,10 +198,10 @@ watchEffect( () => {
   if( hlTextRef.value ){
     // let childNodes = hlTextRef.value.childNodes;
     let childNodes = regexState.nodeList || [];
-    console.log("childnOde" , childNodes.length)
+    // console.log("childnOde" , childNodes.length)
     let lines = [];
     Array.from(childNodes)?.map( node => {
-      console.log( 'node' ,node , node.nodeType , node.nodeValue)
+      // console.log( 'node' ,node , node.nodeType , node.nodeValue)
       const { nodeType } = node;
       if( nodeType === 1 && node.childNodes?.length > 0 ){
         lines.push(node.childNodes[0]?.nodeValue);
@@ -177,20 +209,35 @@ watchEffect( () => {
         lines.push(node?.nodeValue)
       }
     })
-    console.log("lines" , lines.length , lines );
+    // console.log("lines" , lines.length , lines );
     lines?.forEach( (line,idx) => {
       if( line && ( regexState.matchPattern?.indexOf('g') != -1 || !flag ) ){
         line?.replace(regex , (...args) => { match(...args , idx ) } );
       }
     })
   }
-  console.log("<------------------------------------end------------------------------------------>")
+  // console.log("<------------------------------------end------------------------------------------>")
 })
+
+function createPlaceholderNode(){
+    var lineDivNode = document.createElement('div');
+    var placeholderSpanNode = document.createElement('span');
+    var placeholderTextNode = document.createTextNode(regexState.placeholder);
+    lineDivNode.setAttribute('class' , 'text-line');
+    placeholderSpanNode.setAttribute("contenteditable" , "false");
+    placeholderSpanNode.style.pointerEvents = 'none';
+    placeholderSpanNode.appendChild(placeholderTextNode);
+    lineDivNode.appendChild(placeholderSpanNode);
+    hlTextRef.value?.appendChild(lineDivNode);
+}
 
 onMounted(() => {
   if(hlTextRef.value){
+    var lineDivNode = document.createElement('div');
     var textNode = document.createTextNode(regexState.text);
-    hlTextRef.value?.appendChild(textNode);
+    lineDivNode.setAttribute('class' , 'text-line');
+    lineDivNode?.appendChild(textNode);
+    hlTextRef.value?.appendChild(lineDivNode);
     regexState.nodeList = hlTextRef.value?.childNodes || [];
   }
 })  
@@ -238,14 +285,14 @@ onMounted(() => {
 
   /* 描述每种高亮方式的CSS特性 */
   ::highlight(type-a) {
-    background-color: #ff0000;
-    color: white;
+    background-color: #f3db90;
+    color: #382c06;
   }
 
   /* 描述每种高亮方式的CSS特性 */
   ::highlight(type-b) {
-    background-color: #9EEFFF;
-    color: black;
+    background-color: #99beff;
+    color: #382c06;
   }
 }
 </style>
