@@ -7,42 +7,41 @@
       <el-tab-pane label="正则匹配">
 
         <div class="regex-list-wrapper">
-          <a @click="(e) => handleExpClick( e , regex)" href="#" class="regex-exp" v-for="(regex,idx) in regexState.regexExpList" :key="idx">{{ regex.label }}</a>
+          <a @click="(e) => regexState?.handleExpClick(e, regex)" href="#" class="regex-exp"
+            v-for="(regex, idx) in regexState.regexExpList" :key="idx">{{ regex.label }}</a>
         </div>
 
         <!-- 正则表达式输入框 -->
         <div class="regex-wrapper">
-          <el-input size="large" v-model="regexState.regex" placeholder="请输入正则表达式" class="input-with-select">
-          </el-input>
-
-          <el-checkbox-group v-model="regexState.matchPattern">
-            <el-checkbox :key="idx" v-for="(item, idx) in regexState.matchPatternList" :label="item.label"
-              :value="item.value"></el-checkbox>
-          </el-checkbox-group>
-
-          <!-- 正则表达式 -->
-          <div class="expression-wrapper" v-if="regexExp">
-            <span style="font-weight: bold;"> {{ regexExp }}</span>
-          </div>
-
-          <!-- 文本输入框 -->
-          <div class="text-wrapper">
-            <div class="text-content" autocorrect="off" autocapitalize="off" spellcheck="false" translate="no" placeholder="请输入内容"
-              :aria-multiline="true" :contenteditable="true" ref="hlTextRef" @input="regexState.handleTextInput">
-            </div>
-          </div>
-
-          <!-- <div v-html="matchText" ></div> -->
-
-          <h3 style="color: #444444;margin-bottom: 10px;">共找到 {{ matchTextList?.length || 0 }} 处匹配结果</h3>
-          <div class="result-wrapper">
-            <div class="item" v-for="(item, idx) in matchTextList" :key="idx">{{ item }}</div>
+          <div class="regex-content" autocorrect="off" autocapitalize="off" spellcheck="false" translate="no"
+            placeholder="请输入内容" :aria-multiline="true" :contenteditable="true" ref="hlRegexRef"
+            @input="regexState.handleRegexInput">
           </div>
         </div>
+
+        <el-checkbox-group v-model="regexState.matchPattern">
+          <el-checkbox :key="idx" v-for="(item, idx) in regexState.matchPatternList" :label="item.label"
+            :value="item.value"></el-checkbox>
+        </el-checkbox-group>
+
+        <!-- 正则表达式 -->
+        <div class="expression-wrapper" v-if="regexExp">
+          <span style="font-weight: bold;"> {{ regexExp }}</span>
+        </div>
+
+        <!-- 文本输入框 -->
+        <div class="text-wrapper">
+          <div class="text-content" autocorrect="off" autocapitalize="off" spellcheck="false" translate="no"
+            placeholder="请输入内容" :aria-multiline="true" :contenteditable="true" ref="hlTextRef"
+            @input="regexState.handleTextInput">
+          </div>
+        </div>
+
+        <h3 style="color: #444444;margin-bottom: 10px;">共找到 {{ matchTextList?.length || 0 }} 处匹配结果</h3>
+        <div class="result-wrapper">
+          <div class="item" v-for="(item, idx) in matchTextList" :key="idx">{{ item }}</div>
+        </div>
       </el-tab-pane>
-      <!-- <el-tab-pane label="待定"></el-tab-pane>
-      <el-tab-pane label="待定"></el-tab-pane>
-      <el-tab-pane label="待定"></el-tab-pane> -->
     </el-tabs>
   </div>
 </template>
@@ -51,6 +50,7 @@
 import { ref , reactive , computed , onMounted , watchEffect , onUpdated , nextTick } from 'vue';
 
 const hlTextRef = ref(null);
+const hlRegexRef = ref(null);
 
 const regexExp = computed(() => {
   if(!regexState.regex) return '';
@@ -58,6 +58,7 @@ const regexExp = computed(() => {
 });
 
 const matchTextList = computed(() => {
+  console.log("text" , regexState.text , 'regex' , regexState.regex )
   let regex = new RegExp(regexState.regex , regexState.matchPattern?.join(''));
   let result = regexState.text?.match(regex)
   if( regexState.matchPattern?.indexOf('g') == -1 && result?.length > 0 ){
@@ -69,16 +70,17 @@ const matchTextList = computed(() => {
 
 const regexState = reactive({
   regex: '',
-  text: `
-  13565770467
+  // text:  `13565770467 620201200603267353`,
+  text: `13565770467
   620201200603267353
   8e2a@hzwk937.site
   17:45:35
   10.255.33.30
   粤B5XF44`,
   placeholder: '',
-  html: '',
+  regexHtml: '',
   nodeList: [],
+  regexNodeList: [],
   matchPattern: ['g'],
   matchPatternList: [
     {
@@ -116,7 +118,8 @@ const regexState = reactive({
     },
     {
       label: '手机号',
-      value: '(13\\d|14[579]|15[^4\\D]|17[^49\\D]|18\\d)\\d{8}'
+      // value: '(13\\d|14[579]|15[^4\\D]|17[^49\\D]|18\\d)\\d{8}'
+      value: '^(?:(?:\\+|00)86)?1[3-9]\\d{9}$',
     },{
       label: '身份证',
       value: '\\d{17}[0-9Xx]|\\d{15}',
@@ -135,30 +138,10 @@ const regexState = reactive({
     }
   ],
   handleTextInput:(e) => {
-    // console.log('innder' , e )
-    // regexState.text = e.target.innerText?.replaceAll('\n' , '<br/>');
     regexState.text = e.target.innerText;
     let childNodes = hlTextRef.value.childNodes || [];
     regexState.nodeList = [ ...childNodes ];
     
-    // var lineNodes = hlTextRef.value?.querySelectorAll('.text-line');
-    // console.log('lineNodes' , lineNodes);
-    // Array.from(lineNodes)?.forEach( (lineNode,idx) => {
-    //   if( idx !== lineNodes?.length -1 ){
-    //     var enterNode = lineNode.querySelector('.enter-symbol');
-    //     if( !enterNode ){
-    //       var spanNode = document.createElement('span');
-    //       spanNode.setAttribute("contenteditable" , "false");
-    //       spanNode.className = 'enter-symbol';
-    //       spanNode.style.color = 'rgba(0,0,0,.25)';
-    //       spanNode.style.pointerEvents = 'none';
-    //       var textNode = document.createTextNode('↵');
-    //       spanNode?.appendChild(textNode);
-    //       lineNode?.insertBefore(spanNode , lineNode.children[0]);
-    //     } 
-    //   }
-    // })
-    // console.log("regexState.text" , regexState.text)
     // nextTick(() => {
     //   if( hlTextRef.value ){
     //       var range = document.createRange();
@@ -169,53 +152,41 @@ const regexState = reactive({
     //       sel.addRange(range)
     //     } 
     // })
+  },
+  handleRegexInput: (e) => {
+    regexState.regex = e.target.innerText;
+    let childNodes = hlRegexRef.value?.childNodes || [];
+    regexState.regexNodeList = [...childNodes];
+  },
+  handleExpClick: (e , item ) => {
+    e?.preventDefault();
+    regexState.regex = item.value;
+    hlRegexRef.value.innerText = regexState.regex;
+    let childNodes = hlRegexRef.value?.childNodes || [];
+    regexState.regexNodeList = [...childNodes];
   }
 })
 
 watchEffect( () => {
-  let regex;
   let childNodes = regexState.nodeList || [];
-  try{
-    regex = new RegExp(regexState.regex , regexState.matchPattern?.join('')); 
-  }catch(e){}
-
-
-  function match(){
-    // console.log("arguments" , arguments)
-    flag = true;
-    let mText = arguments[0];
-    let offset = arguments[arguments.length-3];
-    let oText = arguments[arguments.length-2];
-    let nodeOffset = arguments[arguments.length-1];
-    // 匹配文本高亮显示
-    if( childNodes?.length > 0 ){
-      let index = regexState.hightlightTypeIndex || 0;
-      regexState.hightlightTypeIndex += 1;
-      const range = new Range();
-      let node = childNodes[nodeOffset];
-      if( node?.nodeType != 3 && node?.nodeType != 1 ){
-        return;
-      }
-      if( node?.nodeType === 1 ){
-        node = node?.childNodes[0];
-      }
-      range.setStart(node , offset);
-      range.setEnd(node, offset + mText?.length);
-      let highlight = highlightList[index%highlightList?.length];
-      highlight.add(range);
-    }
-    return mText;
-  }
-
-  // console.log("<------------------------------------start------------------------------------------>")
-  let flag = false;
+  let regexNodes = regexState.regexNodeList || [];
   regexState.hightlightTypeIndex = 0;
   let highlightList = regexState.hightlightTypeList?.map( type => {
     const highlight = new Highlight();
     CSS.highlights.set(type, highlight);
     return highlight;
   })
-  // 分行匹配
+
+  let regexLines = [];
+  Array.from(regexNodes)?.map( node => {
+    const { nodeType } = node;
+    if( nodeType === 1 && node.childNodes?.length > 0 ){
+      regexLines.push(node.childNodes[0]?.nodeValue);
+    }else{
+      regexLines.push(node?.nodeValue)
+    }
+  })
+
   let lines = [];
   Array.from(childNodes)?.map( node => {
     const { nodeType } = node;
@@ -225,72 +196,168 @@ watchEffect( () => {
       lines.push(node?.nodeValue)
     }
   })
-  console.log("lines" , lines.length , lines );
-  lines?.forEach( (line,idx) => {
-    // 如果不是全局g只匹配一次
-    if( line && ( regexState.matchPattern?.indexOf('g') != -1 || !flag ) ){
-      line?.replace(regex , (...args) => { match(...args , idx ) } );
+
+  if( lines?.length < regexLines?.length ) return;
+  let regex;
+  let flag = false;
+  if( regexLines?.length <= 1 ){
+      try{
+        regex = new RegExp( regexLines[0] , regexState.matchPattern?.join('')); 
+      }catch(e){}
+      console.log("regex1" , regex);
+      if( !regex ) return;
+      console.log("regex2" , regex);
+      console.log('lines' , lines);
+      lines?.forEach( (line,idx) => {
+        console.log("line" , line)
+        // 如果不是全局g只匹配一次
+        if( line && ( regexState.matchPattern?.indexOf('g') != -1 || !flag ) ){
+          line?.replace(regex , (...args) => { console.log("asd"); match(...args , idx ) } );
+        }
+      })
+  }else{
+    console.log("start" , lines)
+      for( let i = 0; i < lines.length ; i++ ){
+        let j = 0;
+        let isMatch = true;
+        let matchList = [];
+        while( j < regexLines.length && i < lines.length ){
+          let line = lines[i];
+          console.log("i" , i , line)
+          console.log("j" , j ,  regexLines[j] )
+          if(( regexLines[j] == null || regexLines[j] == '' ) && (line == null || line == '' )){
+            matchList?.push({ mText: '' , offset: 0 , oText: '' , nodeOffset: i });
+            i++;
+            j++;
+            continue;
+          }   
+
+          if(j === 0){
+            try{
+              regex = new RegExp( regexLines[j] , regexState.matchPattern?.join('')); 
+            }catch(e){}
+            if( !regex ) return;
+            var temp = regex?.exec(line);
+            let match;
+            if(temp) match = temp;
+            console.log("matchText1" , match , match?.index)
+            while( temp != null ){
+              temp = regex.exec(line);
+              if(temp) match = temp;
+              console.log("matchText1" , match)
+            }
+            if(!match || !line?.endsWith(match[0])){
+              isMatch = false;
+              i++;
+              j++;
+              break;
+            }else{
+              matchList?.push({ mText: match[0] , offset: match?.index , oText: match?.input , nodeOffset: i });
+              i++;
+              j++;
+            }
+          }else if( j === regexLines.length - 1 ){
+            try{
+              regex = new RegExp( regexLines[j] , regexState.matchPattern?.join('')); 
+            }catch(e){}
+            if( !regex ) return;
+            var match = regex.exec(line);
+            console.log("matchText3" , match)
+            if(!match || !line?.startsWith(match[0])){
+              isMatch = false;
+              i++;
+              j++;
+              break;
+            }else{
+              matchList?.push({ mText: match[0] , offset: match?.index , oText: match?.input , nodeOffset: i });
+              i++;
+              j++;
+            }
+          }else {
+            try{
+              regex = new RegExp( regexLines[j] , regexState.matchPattern?.join('')); 
+            }catch(e){}
+            if( !regex ) return;
+            var match = regex.exec(line);
+            console.log("matchText2" , match)
+            if( !match || line != match[0] ){
+              isMatch = false;
+              i++;
+              j++;
+              break;
+            }else{
+              matchList?.push({ mText: match[0] , offset: match?.index , oText: match?.input , nodeOffset: i });
+              i++;
+              j++;
+            }
+          }
+        }
+        console.log("isMatch" , isMatch )
+        if( isMatch && j === regexLines?.length){
+          console.log("matchList" , matchList)
+          matchList?.forEach( match => {
+            const { mText , offset , nodeOffset } = match;
+            let index = regexState.hightlightTypeIndex || 0;
+            const range = new Range();
+            let node = childNodes[nodeOffset];
+            if( node?.nodeType != 3 && node?.nodeType != 1 ){
+              return;
+            }
+            if( node?.nodeType === 1 ){
+              node = node?.childNodes[0];
+            }
+            range.setStart(node , offset);
+            range.setEnd(node, offset + mText?.length);
+            let highlight = highlightList[index%highlightList?.length];
+            highlight.add(range);
+          })
+          regexState.hightlightTypeIndex += 1;
+          if( regexState.matchPattern?.indexOf('g') === -1 ){
+            break;
+          }
+          i = i - 1;
+        }else{
+          i = i - j;
+        }
+      }
+      console.log("end")
+  }
+
+    // lines?.forEach( (line,idx) => {
+    //   // 如果不是全局g只匹配一次
+    //   if( line && ( regexState.matchPattern?.indexOf('g') != -1 || !flag ) ){
+    //     line?.replace(regex , (...args) => { match(...args , idx ) } );
+    //   }
+    // })
+
+    function match(){
+      console.log("arguments" , arguments)
+      flag = true;
+      regexState.hightlightTypeIndex += 1;
+      let mText = arguments[0];
+      let offset = arguments[arguments.length-3];
+      let oText = arguments[arguments.length-2];
+      let nodeOffset = arguments[arguments.length-1];
+      // 匹配文本高亮显示
+      if( childNodes?.length > 0 ){
+        let index = regexState.hightlightTypeIndex || 0;
+        const range = new Range();
+        let node = childNodes[nodeOffset];
+        if( node?.nodeType != 3 && node?.nodeType != 1 ){
+          return;
+        }
+        if( node?.nodeType === 1 ){
+          node = node?.childNodes[0];
+        }
+        range.setStart(node , offset);
+        range.setEnd(node, offset + mText?.length);
+        let highlight = highlightList[index%highlightList?.length];
+        highlight.add(range);
+      }
+      return mText;
     }
-  })
   // console.log("<------------------------------------end------------------------------------------>")
 })
-
-// watchEffect( () => {
-//   console.log("watchEffect")
-//   let childNodes = regexState.nodeList || [];
-  
-//   if( !childNodes || childNodes?.length === 0 ){
-//     var lineDiv = document.createElement('div');
-//     var br = document.createElement('br');
-//     lineDiv.appendChild(br);
-//     lineDiv.className = 'text-line';
-//     hlTextRef.value?.appendChild(lineDiv);
-//   }else{
-//     childNodes?.forEach( (node , idx) => {
-//       const { nodeType } = node;
-//       if( idx != childNodes?.length - 1 && nodeType === 1 ){
-//         let hasEnterNode = node?.querySelector('.text-enter');
-//         let hasBrNode = node?.querySelector('br');
-
-//         var brNode = document.createElement('br');
-//         var enterNode = document.createElement('span');
-//         var textNode = document.createTextNode('');
-//         enterNode?.appendChild(textNode);
-//         enterNode.className = 'text-enter';
-//         enterNode.setAttribute('contenteditable' , false);
-//         enterNode.style.color = '#333';
-//         enterNode.style.opacicy = 0.5;
-//         if( hasBrNode && !hasEnterNode ){
-//           node?.insertBefore( enterNode , hasBrNode);
-//         }else if( !hasBrNode && !hasEnterNode ){
-//           node?.appendChild( enterNode );
-//           // node?.appendChild( brNode );
-//         }
-//       }
-//     })
-//   }
-
-//   nextTick(() => {
-//     let childNodes = hlTextRef.value.childNodes || [];
-//     console.log("childNodes" , childNodes.length)
-//     childNodes?.forEach( (node , idx) => {
-//       const { nodeType } = node;
-//       console.log("nodeType" , nodeType );
-//       console.log("node",node)
-//     })
-//   })
-// })
-
-// function createPlaceholderSpanNode(){
-//     var placeholderSpanNode = document.createElement('span');
-//     var placeholderTextNode = document.createTextNode(regexState.placeholder);
-//     placeholderSpanNode.classList?.add('text-placeholder');
-//     placeholderSpanNode.setAttribute("contenteditable" , "false");
-//     placeholderSpanNode.setAttribute('data-widger' , 'false');
-//     placeholderSpanNode.style.pointerEvents = 'none';
-//     placeholderSpanNode.appendChild(placeholderTextNode);
-//     return placeholderSpanNode;
-// }
 
 function bindPasteEvent(){
   // 监听粘贴事件,过滤富文本
@@ -325,11 +392,6 @@ function bindPasteEvent(){
   });
 }
 
-function handleExpClick(e , item) {
-  e?.preventDefault();
-  regexState.regex = item.value;
-}
-
 onMounted(() => {
   bindPasteEvent();
   if(hlTextRef.value){
@@ -337,10 +399,21 @@ onMounted(() => {
     lineDivNode.classList?.add('text-line');
     var textNode = document.createTextNode(regexState.text);
     lineDivNode?.appendChild(textNode);
-    hlTextRef.value?.appendChild(lineDivNode);
-    regexState.nodeList = hlTextRef.value?.childNodes || [];
+    if( regexState.text != '' && regexState.text != null ) {
+      hlTextRef.value?.appendChild(lineDivNode);
+      regexState.nodeList = hlTextRef.value?.childNodes || [];
+    }
   }
-
+  if( hlRegexRef.value ){
+    var lineDivNode = document.createElement('div');
+    lineDivNode.classList?.add('regex-line');
+    var textNode = document.createTextNode(regexState.regex);
+    lineDivNode?.appendChild(textNode);
+    if( regexState.regex  != '' && regexState.regex != null ){
+      hlRegexRef.value?.appendChild(lineDivNode);
+      regexState.regexNodeList = hlRegexRef.value?.childNodes || [];
+    }
+  }
 })  
 </script>
 
@@ -352,25 +425,30 @@ onMounted(() => {
     outline: none;
   }
 
-  .regex-list-wrapper{
+  .regex-list-wrapper {
     margin-bottom: 15px;
-    .regex-exp{
+
+    .regex-exp {
       color: #409eff;
       margin-right: 10px;
       text-decoration: none;
     }
-    .regex-exp:hover{
+
+    .regex-exp:hover {
       text-decoration: underline;
     }
   }
 
   .regex-wrapper {
+    width: 100%;
+    height: 60px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    padding: 5px;
+    overflow: auto;
 
-    // display: flex;
-    // justify-content: center;
-    // align-items: center;
-    .expression {
-      margin: 10px 0;
+    .regex-content {
+      min-height: 100%;
     }
   }
 
@@ -379,6 +457,7 @@ onMounted(() => {
     margin: 15px 0;
   }
 
+
   .text-wrapper {
     height: 250px;
     margin-bottom: 10px;
@@ -386,20 +465,25 @@ onMounted(() => {
     padding: 5px;
     overflow: auto;
 
-    .text-content{
+    .text-content {
       min-height: 100%;
-      :deep(.text-line){
-      }
-      :deep(.text-placeholder){
-        pointer-events:none;
+
+      :deep(.text-line) {}
+
+      :deep(.text-placeholder) {
+        pointer-events: none;
         color: #333;
         opacity: 0.5;
       }
-      :deep(.text-enter)::before{
+
+      :deep(.text-enter)::before {
         content: '↵';
         color: #ccc;
+        -webkit-user-modify: read-only;
       }
     }
+
+
     // .text-content[contenteditable]:empty::before {
     //     content: attr(placeholder);
     //     color: #ccc;
