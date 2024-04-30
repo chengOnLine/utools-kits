@@ -295,7 +295,7 @@ watchEffect( () => {
     const { nodeType } = node;
     console.log("nodeType" , nodeType , node )
     if( nodeType === 1 ){
-      lines.push(node?.childNodes[0]?.nodeValue);
+      lines.push(node?.innerText);
     }else{
       lines.push(node?.nodeValue)
     }
@@ -615,7 +615,7 @@ onMounted(() => {
 
     .text-content {
       min-height: 100%;
-      white-space: pre-wrap;
+      // white-space: pre-wrap;
 
       :deep(.text-line) {}
 
