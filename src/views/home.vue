@@ -6,40 +6,67 @@
     <el-tabs type="border-card" class="demo-tabs">
       <el-tab-pane label="正则匹配">
 
-        <div class="regex-list-wrapper">
-          <a @click="(e) => regexState?.handleExpClick(e, regex)" href="#" class="regex-exp"
-            v-for="(regex, idx) in regexState.regexExpList" :key="idx">{{ regex.label }}</a>
-        </div>
-
-        <!-- 正则表达式输入框 -->
-        <div class="regex-wrapper">
-          <div class="regex-content" autocorrect="off" autocapitalize="off" spellcheck="false" translate="no"
-            placeholder="请输入内容" :aria-multiline="true" :contenteditable="true" ref="hlRegexRef"
-            @input="regexState.handleRegexInput">
+        <div class="regex-test-wrapper">
+          <div class="regex-list-wrapper">
+            <a @click="(e) => regexState?.handleExpClick(e, regex)" href="#" class="regex-exp"
+              v-for="(regex, idx) in regexState.regexExpList" :key="idx">{{ regex.label }}</a>
           </div>
-        </div>
 
-        <el-checkbox-group v-model="regexState.matchPattern">
-          <el-checkbox :key="idx" v-for="(item, idx) in regexState.matchPatternList" :label="item.label"
-            :value="item.value"></el-checkbox>
-        </el-checkbox-group>
+          <!-- 正则表达式输入框 -->
+          <div class="regex-wrapper">
+            <div class="delimiter">
+              <div>/</div>
+            </div>
+            <div class="expression">
+              <div class="scroll-box">
+                <div class="regex-content" autocorrect="off" autocapitalize="off" spellcheck="false" translate="no"
+                  placeholder="请输入内容" :aria-multiline="true" :contenteditable="true" ref="hlRegexRef"
+                  @input="regexState.handleRegexInput">
+                </div>
+              </div>
+            </div>
+            <div class="delimiter">
+              <div>/</div>
+            </div>
+            <div class="flag">
+              <span>{{ regexState.matchPattern?.join('') }}</span>
+            </div>
 
-        <!-- 正则表达式 -->
-        <div class="expression-wrapper" v-if="regexExp">
-          <span style="font-weight: bold;"> {{ regexExp }}</span>
-        </div>
 
-        <!-- 文本输入框 -->
-        <div class="text-wrapper">
-          <div class="text-content" autocorrect="off" autocapitalize="off" spellcheck="false" translate="no"
-            placeholder="请输入内容" :aria-multiline="true" :contenteditable="true" ref="hlTextRef"
-            @input="regexState.handleTextInput">
+            <button @click="regexState.handleRegexCopyClick" class="copy-btn" aria-disabled="false"
+              title="Copy to clipboard" type="button">
+              <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 24 24" height="16" width="16"
+                xmlns="http://www.w3.org/2000/svg">
+                <path
+                  d="M6.9998 6V3C6.9998 2.44772 7.44752 2 7.9998 2H19.9998C20.5521 2 20.9998 2.44772 20.9998 3V17C20.9998 17.5523 20.5521 18 19.9998 18H16.9998V20.9991C16.9998 21.5519 16.5499 22 15.993 22H4.00666C3.45059 22 3 21.5554 3 20.9991L3.0026 7.00087C3.0027 6.44811 3.45264 6 4.00942 6H6.9998ZM5.00242 8L5.00019 20H14.9998V8H5.00242ZM8.9998 6H16.9998V16H18.9998V4H8.9998V6Z">
+                </path>
+              </svg>
+            </button>
           </div>
-        </div>
 
-        <h3 style="color: #444444;margin-bottom: 10px;">共找到 {{ matchTextList?.length || 0 }} 处匹配结果</h3>
-        <div class="result-wrapper">
-          <div class="item" v-for="(item, idx) in matchTextList" :key="idx">{{ item }}</div>
+          <el-checkbox-group v-model="regexState.matchPattern">
+            <el-checkbox :key="idx" v-for="(item, idx) in regexState.matchPatternList" :label="item.label"
+              :value="item.value"></el-checkbox>
+          </el-checkbox-group>
+
+          <!-- 正则表达式 -->
+          <!-- <div class="expression-wrapper" v-if="regexExp">
+            <span style="font-weight: bold;"> {{ regexExp }}</span>
+          </div> -->
+
+          <!-- 文本输入框 -->
+          <div class="text-wrapper">
+            <div class="text-content" v-html="regexState.html" autocorrect="off" autocapitalize="off" spellcheck="false"
+              translate="no" placeholder="请输入内容" :aria-multiline="true" :contenteditable="true" ref="hlTextRef"
+              @input="regexState.handleTextInput">
+            </div>
+          </div>
+
+          <h3 style="color: #444444;margin-bottom: 10px;">共找到 {{ matchTextList?.length || 0 }} 处匹配结果</h3>
+          <div class="result-wrapper">
+            <div class="item" v-for="(item, idx) in matchTextList" :key="idx" v-html="item?.replace('\n', '<br />')">
+            </div>
+          </div>
         </div>
       </el-tab-pane>
     </el-tabs>
@@ -48,7 +75,7 @@
 
 <script setup name="Home">
 import { ref , reactive , computed , onMounted , watchEffect , onUpdated , nextTick } from 'vue';
-
+import { ElMessage } from "element-plus";
 const hlTextRef = ref(null);
 const hlRegexRef = ref(null);
 
@@ -59,7 +86,14 @@ const regexExp = computed(() => {
 
 const matchTextList = computed(() => {
   console.log("text" , regexState.text , 'regex' , regexState.regex )
-  let regex = new RegExp(regexState.regex , regexState.matchPattern?.join(''));
+  let regex;
+  if( regexState.regex == '' ){
+    return [];
+  }
+  try{
+    regex = new RegExp(regexState.regex , regexState.matchPattern?.join(''));
+  }catch(e){}
+
   let result = regexState.text?.match(regex)
   if( regexState.matchPattern?.indexOf('g') == -1 && result?.length > 0 ){
     result = [result[0]] 
@@ -71,12 +105,13 @@ const matchTextList = computed(() => {
 const regexState = reactive({
   regex: '(?:(?:\\+|00)86)?1[3-9]\\d{9}',
   // text:  `13565770467 620201200603267353`,
-  text: `13565770467
-  620201200603267353
-  8e2a@hzwk937.site
-  17:45:35
-  10.255.33.30
-  粤B5XF44`,
+  text: 
+`13565770467
+620201200603267353
+8e2a@hzwk937.site
+17:45:35
+10.255.33.30
+粤B5XF44`,
   placeholder: '',
   regexHtml: '',
   nodeList: [],
@@ -135,13 +170,37 @@ const regexState = reactive({
     {
       label: '时间(时:分:秒)',
       value: '([01]?\\d|2[0-3]):[0-5]?\\d:[0-5]?\\d',
+    },
+    {
+      label: '统一信用代码',
+      value: '^[0-9A-HJ-NPQRTUWXY]{2}\\d{6}[0-9A-HJ-NPQRTUWXY]{10}',
+    },
+    { 
+      label: 'HTML注释',
+      value: '/<!--[\\s\\S]*?-->/g' , 
+    },
+    {
+      label: 'HTML标签(宽松匹配)',
+      value: '<(\\w+)[^>]*>(.*?<\\/\\>)?'
+    },
+    {
+      label: '数字/货币金额（支持负数、千分位分隔符）',
+      value: '^-?\\d{1,3}(,\\d{3})*(\\.\\d{1,2})?$'
+    },
+    {
+      label: '中文姓名',
+      value: '^(?:[\\u4e00-\\u9fa5·]{2,16})$',
+    },
+    {
+      label: 'mac地址',
+      value: '^(([a-f0-9][0,2,4,6,8,a,c,e]:([a-f0-9]{2}:){4})|([a-f0-9][0,2,4,6,8,a,c,e]-([a-f0-9]{2}-){4}))[a-f0-9]{2}$'
     }
   ],
   handleTextInput:(e) => {
     regexState.text = e.target.innerText;
     let childNodes = hlTextRef.value.childNodes || [];
     regexState.nodeList = [ ...childNodes ];
-    
+    // regexState.html = hlTextRef.value?.innerHTML;
     // nextTick(() => {
     //   if( hlTextRef.value ){
     //       var range = document.createRange();
@@ -164,8 +223,50 @@ const regexState = reactive({
     hlRegexRef.value.innerText = regexState.regex;
     let childNodes = hlRegexRef.value?.childNodes || [];
     regexState.regexNodeList = [...childNodes];
+  },
+  handleRegexCopyClick(){
+    var textarea = document.createElement('textarea');
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = 0;
+    textarea.value = '/' + regexState.regex + '/' + regexState.matchPattern?.join('');
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+    ElMessage({
+        message: "已复制",
+        type: "success",
+    });
   }
 })
+
+function getTextFromHtml(htmlElement) {
+  let text = '';
+  if (htmlElement) {
+    if(  htmlElement.nodeType === Node.TEXT_NODE ){
+      return htmlElement.textContent;
+    }
+    const childNodes = htmlElement.childNodes;
+    for (let i = 0; i < childNodes.length; i++) {
+      const node = childNodes[i];
+      if (node.nodeType === Node.TEXT_NODE) {
+        console.log("node.textContent" , node.textContent)
+        text += node.textContent;
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        text += getTextFromHtml(node);
+      }
+    }
+  }
+  console.log("text" , text)
+  return text;
+}
+
+// const toHtml = computed(() => {
+//   console.log("toHtml")
+//   const html = hlTextRef.value?.innerHTML;
+//   console.log("html" , html)
+//   return html;
+// })
 
 watchEffect( () => {
   let childNodes = regexState.nodeList || [];
@@ -180,8 +281,10 @@ watchEffect( () => {
   let regexLines = [];
   Array.from(regexNodes)?.map( node => {
     const { nodeType } = node;
-    if( nodeType === 1 && node.childNodes?.length > 0 ){
-      regexLines.push(node.childNodes[0]?.nodeValue);
+    if( nodeType === 1 ){
+      console.log("node.innerText" , node.innerText )
+      console.log("node.innerText" , node.textContent )
+      regexLines.push(node?.childNodes[0]?.nodeValue );
     }else{
       regexLines.push(node?.nodeValue)
     }
@@ -190,12 +293,22 @@ watchEffect( () => {
   let lines = [];
   Array.from(childNodes)?.map( node => {
     const { nodeType } = node;
-    if( nodeType === 1 && node.childNodes?.length > 0 ){
-      lines.push(node.childNodes[0]?.nodeValue);
+    console.log("nodeType" , nodeType , node )
+    if( nodeType === 1 ){
+      lines.push(node?.childNodes[0]?.nodeValue);
     }else{
       lines.push(node?.nodeValue)
     }
   })
+
+  // if( childNodes?.length === 0 ){
+  //   nextTick( () => {
+  //     var lineDivNode = document.createElement('div');
+  //     lineDivNode.className = 'text-line'
+  //     hlTextRef.value?.appendChild(lineDivNode);
+  //   })
+  //   return;
+  // }
 
   if( lines?.length < regexLines?.length ) return;
   let regex;
@@ -320,39 +433,32 @@ watchEffect( () => {
       console.log("end")
   }
 
-    // lines?.forEach( (line,idx) => {
-    //   // 如果不是全局g只匹配一次
-    //   if( line && ( regexState.matchPattern?.indexOf('g') != -1 || !flag ) ){
-    //     line?.replace(regex , (...args) => { match(...args , idx ) } );
-    //   }
-    // })
-
-    function match(){
-      // console.log("arguments" , arguments)
-      flag = true;
-      regexState.hightlightTypeIndex += 1;
-      let mText = arguments[0];
-      let offset = arguments[arguments.length-3];
-      let oText = arguments[arguments.length-2];
-      let nodeOffset = arguments[arguments.length-1];
-      // 匹配文本高亮显示
-      if( childNodes?.length > 0 ){
-        let index = regexState.hightlightTypeIndex || 0;
-        const range = new Range();
-        let node = childNodes[nodeOffset];
-        if( node?.nodeType != 3 && node?.nodeType != 1 ){
-          return;
-        }
-        if( node?.nodeType === 1 ){
-          node = node?.childNodes[0];
-        }
-        range.setStart(node , offset);
-        range.setEnd(node, offset + mText?.length);
-        let highlight = highlightList[index%highlightList?.length];
-        highlight.add(range);
+  function match(){
+    // console.log("arguments" , arguments)
+    flag = true;
+    regexState.hightlightTypeIndex += 1;
+    let mText = arguments[0];
+    let offset = arguments[arguments.length-3];
+    let oText = arguments[arguments.length-2];
+    let nodeOffset = arguments[arguments.length-1];
+    // 匹配文本高亮显示
+    if( childNodes?.length > 0 ){
+      let index = regexState.hightlightTypeIndex || 0;
+      const range = new Range();
+      let node = childNodes[nodeOffset];
+      if( node?.nodeType != 3 && node?.nodeType != 1 ){
+        return;
       }
-      return mText;
+      if( node?.nodeType === 1 ){
+        node = node?.childNodes[0];
+      }
+      range.setStart(node , offset);
+      range.setEnd(node, offset + mText?.length);
+      let highlight = highlightList[index%highlightList?.length];
+      highlight.add(range);
     }
+    return mText;
+  }
   // console.log("<------------------------------------end------------------------------------------>")
 })
 
@@ -416,6 +522,8 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 .container {
+  width: 100%;
+  height: 100%;
   padding: 10px;
 
   [contenteditable]:focus {
@@ -438,14 +546,56 @@ onMounted(() => {
 
   .regex-wrapper {
     width: 100%;
-    height: 60px;
+    max-height: 30vh;
     margin-bottom: 10px;
     border: 1px solid #ccc;
-    padding: 5px;
-    overflow: auto;
+    padding: 4px;
+    display: flex;
+    justify-content: space-between;
+    font-weight: bold;
 
-    .regex-content {
-      min-height: 100%;
+    .delimiter {
+      padding: 5px;
+    }
+
+    .expression {
+      padding: 5px 0;
+      min-width: 150px;
+      flex: 1 1 100%;
+
+      .scroll-box {
+        height: 100%;
+        overflow-x: auto;
+
+        .regex-content {
+          white-space: pre-wrap;
+        }
+      }
+    }
+
+    .flag {
+      padding: 5px 5px 5px 0;
+      flex: 1 0 auto;
+      color: #1a6b2e;
+    }
+
+    .copy-btn {
+      background-color: white;
+      border: none;
+      cursor: pointer;
+      flex: 1 0 auto;
+      padding: 0 12px;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      user-select: none;
+
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .copy-btn:hover {
+      background-color: rgba(0, 0, 0, .2);
     }
   }
 
@@ -457,6 +607,7 @@ onMounted(() => {
 
   .text-wrapper {
     height: 250px;
+    max-height: 30vh;
     margin-bottom: 10px;
     border: 1px solid #ccc;
     padding: 5px;
@@ -464,6 +615,7 @@ onMounted(() => {
 
     .text-content {
       min-height: 100%;
+      white-space: pre-wrap;
 
       :deep(.text-line) {}
 
