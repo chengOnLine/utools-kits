@@ -69,7 +69,7 @@ const matchTextList = computed(() => {
 })
 
 const regexState = reactive({
-  regex: '',
+  regex: '(?:(?:\\+|00)86)?1[3-9]\\d{9}',
   // text:  `13565770467 620201200603267353`,
   text: `13565770467
   620201200603267353
@@ -119,7 +119,7 @@ const regexState = reactive({
     {
       label: '手机号',
       // value: '(13\\d|14[579]|15[^4\\D]|17[^49\\D]|18\\d)\\d{8}'
-      value: '^(?:(?:\\+|00)86)?1[3-9]\\d{9}$',
+      value: '(?:(?:\\+|00)86)?1[3-9]\\d{9}',
     },{
       label: '身份证',
       value: '\\d{17}[0-9Xx]|\\d{15}',
@@ -204,15 +204,12 @@ watchEffect( () => {
       try{
         regex = new RegExp( regexLines[0] , regexState.matchPattern?.join('')); 
       }catch(e){}
-      console.log("regex1" , regex);
       if( !regex ) return;
-      console.log("regex2" , regex);
       console.log('lines' , lines);
       lines?.forEach( (line,idx) => {
-        console.log("line" , line)
         // 如果不是全局g只匹配一次
         if( line && ( regexState.matchPattern?.indexOf('g') != -1 || !flag ) ){
-          line?.replace(regex , (...args) => { console.log("asd"); match(...args , idx ) } );
+          line?.replace(regex , (...args) => { match(...args , idx ) } );
         }
       })
   }else{
@@ -241,7 +238,7 @@ watchEffect( () => {
             let match;
             if(temp) match = temp;
             console.log("matchText1" , match , match?.index)
-            while( temp != null ){
+            while( regexState.matchPattern?.indexOf('g') != -1 && temp != null ){
               temp = regex.exec(line);
               if(temp) match = temp;
               console.log("matchText1" , match)
@@ -331,7 +328,7 @@ watchEffect( () => {
     // })
 
     function match(){
-      console.log("arguments" , arguments)
+      // console.log("arguments" , arguments)
       flag = true;
       regexState.hightlightTypeIndex += 1;
       let mText = arguments[0];
